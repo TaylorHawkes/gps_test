@@ -11,18 +11,25 @@ void setup()
 Serial.begin(115200);
 gpsSerial.begin(9600);
 
- byte updateRateCmd[] = {160, 161, 00, 03, 14, 01, 00, 15, 13, 10}; // 1 Hz
-//  byte updateRateCmd[] = {160, 161, 00, 03, 14, 08, 00, 06, 13, 10}; // 8 Hz			A0 A1 00 03 0E 08 00 06 0D 0A
-//  byte updateRateCmd[] = {160, 161, 00, 03, 14, 10, 00, 04, 13, 10}; // 10 Hz			A0 A1 00 03 0E 0A 00 04 0D 0A
-// byte updateRateCmd[] = {160, 161, 00, 03, 14, 20, 00, 26, 13, 10}; // 20 Hz			A0 A1 00 03 0E 14 00 1A 0D 0A
+// byte updateRateCmd[] =  {160, 161, 00, 03, 14, 01, 00, 15, 13, 10}; // 1 Hz
+// byte updateRateCmd[] = {160, 161, 00, 03, 14, 08, 00, 06, 13, 10}; // 8 Hz			A0 A1 00 03 0E 08 00 06 0D 0A
+ byte updateRateCmd[] = {160, 161, 00, 03, 14, 10, 00, 04, 13, 10}; // 10 Hz			A0 A1 00 03 0E 0A 00 04 0D 0A
+// byte updateRateCmd[] ={160, 161, 00, 03, 14, 20, 00, 26, 13, 10}; // 20 Hz			A0 A1 00 03 0E 14 00 1A 0D 0A
  byte baudrateCmd[] = {160, 161, 00, 04, 05, 00, 05, 00, 00, 13, 10}; // 115200		A0 A1 00 04 05 00 05 00 00 0D 0A
 //byte Factory[] = {160, 161, 00, 02, 04, 01, 05, 13, 10}; // Factory reset
+
+//Enable WAS command
+ byte enableWASS[] = {160, 161, 00, 03, 55, 01, 00, 54, 13, 10}; //set WAS to enabled  //A0 A1 00 03 37 01 00 36 0D 0A 
+
+                                                                                    
 
  gpsSerial.write(baudrateCmd, sizeof(baudrateCmd)); // tell GPS to change baudrate
  gpsSerial.flush(); // wait for command to go out
  delay(50);
  gpsSerial.begin(115200); // New baudrate
- gpsSerial.write(updateRateCmd, sizeof(updateRateCmd));
+ gpsSerial.write(updateRateCmd, sizeof(updateRateCmd));//update rate
+ gpsSerial.write(enableWASS, sizeof(enableWASS));//update enable WASS
+
 }
 
 void loop()
@@ -30,7 +37,9 @@ void loop()
   static int i = 0;
   if (gpsSerial.available())
   {
+
     char ch = gpsSerial.read();
+//  Serial.print(ch);
     if (ch != '\n' && i < sentenceSize)
     {
       sentence[i] = ch;
@@ -49,28 +58,67 @@ void displayGPS()
 {
 
   char field[20];
-  char field2[20];
+  char lat_raw[10];
+  char lng_raw[11];
+  char lat_raw_type[1];
+  char lng_raw_type[1];
+  char lat_compare[10];
+  char lng_compare[11];
+  //see: i=https://cdn.sparkfun.com/datasheets/Sensors/GPS/Venus/638/doc/Venus638FLPx_DS_v07.pdf
+  //gpgga
+  char gga_quality_indicator[3];
+  char gga_satellites[2];
+  char gga_hdop[4];
+
+ char lat[15];
+ char lng[15];
+
   getField(field, 0);
 
+  if (strcmp(field, "$GPGGA") == 0){
+     getField(lat_compare, 2); 
+     getField(lng_compare, 4); 
+     getField(gga_quality_indicator, 6); //
+     getField(gga_satellites, 7); //
+     getField(gga_hdop, 8); //
+
+// Serial.print("hdop:"); Serial.print(gga_hdop);
+// Serial.print("sats:"); Serial.print(gga_satellites); 
+ //run some filtering testings
+ int gga_qi=(gga_quality_indicator[0]-'0');
+ int hdop= +(10*(gga_hdop[0]-'0')) +((gga_hdop[2]-'0'));//1.0 = 10 ,1.2 =12 
+if(hdop < 15){
+    return;
+}
+if(gga_qi < 1){
+     return;
+ }
+
+
+  }
+
+   getField(field, 0);
   if (strcmp(field, "$GPRMC") == 0)
   {
-     getField(field, 3); 
-     getField(field2, 4);
-    
-     char lat[15];
-     toDegreeDecimalLat(field,field2,lat);
+     getField(lat_raw, 3); 
+     getField(lat_raw_type, 4);
+
+     getField(lng_raw, 5); 
+     getField(lng_raw_type, 6);
 
 
-     getField(field, 5); 
-     getField(field2, 6);
+     if(strcmp(lat_raw, lat_compare) || strcmp(lng_raw, lng_compare)){
+      //  Serial.println("Serial error: ignoring packet:");
+        return;
+     }
 
-     char lng[15];
-     toDegreeDecimalLng(field,field2,lng);
+     toDegreeDecimalLat(lat_raw,lat_raw_type,lat);
+     toDegreeDecimalLng(lng_raw,lng_raw_type,lng);
+  Serial.print(lat);
+  Serial.print(",");
+  Serial.print(lng);
+  Serial.print("\n");
 
-      Serial.print(lat);
-      Serial.print(",");
-      Serial.print(lng);
-      Serial.print("\n");
   }
 }
 
@@ -189,7 +237,7 @@ void toDegreeDecimalLng(char* x,char* n,char *buff){
     }
 
    //if under ten we pad dd_final
-  if (n[0]=='W'){ 
+  if(n[0]=='W' || 1  ){ //just always do this 
     buff[0]='-';
     buff[1]=dd_final[0];
     buff[2]=dd_final[1];
