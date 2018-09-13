@@ -1,6 +1,6 @@
-#include <AltSoftSerial.h>
+//#include <AltSoftSerial.h>
 
-AltSoftSerial gpsSerial;
+//AltSoftSerial Serial1;
 const int sentenceSize = 80;
 
 char sentence[sentenceSize];
@@ -9,37 +9,42 @@ void setup()
 {
 
 Serial.begin(115200);
-gpsSerial.begin(9600);
+Serial1.begin(9600);
 
-// byte updateRateCmd[] =  {160, 161, 00, 03, 14, 01, 00, 15, 13, 10}; // 1 Hz
-// byte updateRateCmd[] = {160, 161, 00, 03, 14, 08, 00, 06, 13, 10}; // 8 Hz			A0 A1 00 03 0E 08 00 06 0D 0A
- byte updateRateCmd[] = {160, 161, 00, 03, 14, 10, 00, 04, 13, 10}; // 10 Hz			A0 A1 00 03 0E 0A 00 04 0D 0A
-// byte updateRateCmd[] ={160, 161, 00, 03, 14, 20, 00, 26, 13, 10}; // 20 Hz			A0 A1 00 03 0E 14 00 1A 0D 0A
- byte baudrateCmd[] = {160, 161, 00, 04, 05, 00, 05, 00, 00, 13, 10}; // 115200		A0 A1 00 04 05 00 05 00 00 0D 0A
+byte baudrateCmd[] = {160, 161, 00, 04, 05, 00, 05, 00, 00, 13, 10}; // 115200		A0 A1 00 04 05 00 05 00 00 0D 0A
+
+byte updateRateCmd[] = {160, 161, 00, 03, 14, 01, 00, 15, 13, 10}; // 1 Hz			A0 A1 00 03 0E 01 00 0F 0D 0A
+//  byte updateRateCmd[] = {160, 161, 00, 03, 14, 02, 00, 12, 13, 10}; // 2 Hz			A0 A1 00 03 0E 02 00 0C 0D 0A
+//  byte updateRateCmd[] = {160, 161, 00, 03, 14, 04, 00, 10, 13, 10}; // 4 Hz			A0 A1 00 03 0E 04 00 0A 0D 0A
+//byte updateRateCmd[] = {160, 161, 00, 03, 14, 05, 00, 11, 13, 10}; // 5 Hz			A0 A1 00 03 0E 05 00 0B 0D 0A
+//  byte updateRateCmd[] = {160, 161, 00, 03, 14, 08, 00, 06, 13, 10}; // 8 Hz			A0 A1 00 03 0E 08 00 06 0D 0A
+//  byte updateRateCmd[] = {160, 161, 00, 03, 14, 10, 00, 04, 13, 10}; // 10 Hz			A0 A1 00 03 0E 0A 00 04 0D 0A
+//  byte updateRateCmd[] = {160, 161, 00, 03, 14, 20, 00, 26, 13, 10}; // 20 Hzbyte updateRateCmd[] =  {160, 161, 00, 03, 14, 01, 00, 15, 13, 10}; // 1 Hz
+
 //byte Factory[] = {160, 161, 00, 02, 04, 01, 05, 13, 10}; // Factory reset
 
 //Enable WAS command
- byte enableWASS[] = {160, 161, 00, 03, 55, 01, 00, 54, 13, 10}; //set WAS to enabled  //A0 A1 00 03 37 01 00 36 0D 0A 
+byte enableWASS[] = {160, 161, 00, 03, 55, 01, 00, 54, 13, 10}; //set WAS to enabled  //A0 A1 00 03 37 01 00 36 0D 0A 
 
                                                                                     
 
- gpsSerial.write(baudrateCmd, sizeof(baudrateCmd)); // tell GPS to change baudrate
- gpsSerial.flush(); // wait for command to go out
+ Serial1.write(baudrateCmd, sizeof(baudrateCmd)); // tell GPS to change baudrate
+ Serial1.flush(); // wait for command to go out
  delay(50);
- gpsSerial.begin(115200); // New baudrate
- gpsSerial.write(updateRateCmd, sizeof(updateRateCmd));//update rate
- gpsSerial.write(enableWASS, sizeof(enableWASS));//update enable WASS
+ Serial1.begin(115200); // New baudrate
+ Serial1.write(updateRateCmd, sizeof(updateRateCmd));//update rate
+ Serial1.write(enableWASS, sizeof(enableWASS));//update enable WASS
 
 }
 
 void loop()
 {
   static int i = 0;
-  if (gpsSerial.available())
+  if (Serial1.available())
   {
 
-    char ch = gpsSerial.read();
-//  Serial.print(ch);
+    char ch = Serial1.read();
+  //Serial.print(ch);
     if (ch != '\n' && i < sentenceSize)
     {
       sentence[i] = ch;
@@ -70,11 +75,31 @@ void displayGPS()
   char gga_satellites[2];
   char gga_hdop[4];
 
+  char ggsa_hdop[4];
+  char ggsa_vdop[4];
+  char ggsa_mode[2];
+  char ggsa_mode_fix[2];
+
  char lat[15];
  char lng[15];
 
-  getField(field, 0);
+//   getField(field, 0);
+//if (strcmp(field, "$GPGSA") == 0){
 
+//    getField(ggsa_mode, 1); //
+//    getField(ggsa_mode_fix, 2); //
+//    getField(ggsa_hdop, 15); //
+
+//   Serial.print("mode:"); Serial.println(ggsa_mode);
+//   Serial.print("modefix:"); Serial.println(ggsa_mode_fix);
+//   Serial.print("hdop:"); Serial.println(ggsa_hdop);
+//   return;
+//  //     Serial.print("vdop:"); Serial.print(ggsa_vdop);
+//  //     Serial.println("");
+// }
+
+
+  getField(field, 0);
   if (strcmp(field, "$GPGGA") == 0){
      getField(lat_compare, 2); 
      getField(lng_compare, 4); 
@@ -82,20 +107,23 @@ void displayGPS()
      getField(gga_satellites, 7); //
      getField(gga_hdop, 8); //
 
-// Serial.print("hdop:"); Serial.print(gga_hdop);
+//// Serial.print("hdop:"); Serial.print(gga_hdop);
+//// Serial.println("");
+
 // Serial.print("sats:"); Serial.print(gga_satellites); 
  //run some filtering testings
- int gga_qi=(gga_quality_indicator[0]-'0');
- int hdop= +(10*(gga_hdop[0]-'0')) +((gga_hdop[2]-'0'));//1.0 = 10 ,1.2 =12 
-if(hdop < 15){
-    return;
+    int gga_qi=(gga_quality_indicator[0]-'0');
+    int hdop= +(10*(gga_hdop[0]-'0')) +((gga_hdop[2]-'0'));//1.0 = 10 ,1.2 =12 
+ // if(hdop < 15){
+ //     return;
+ // }
+
+ // if(gga_qi < 1){
+ //      return;
+ // }
+
+
 }
-if(gga_qi < 1){
-     return;
- }
-
-
-  }
 
    getField(field, 0);
   if (strcmp(field, "$GPRMC") == 0)
@@ -107,17 +135,17 @@ if(gga_qi < 1){
      getField(lng_raw_type, 6);
 
 
-     if(strcmp(lat_raw, lat_compare) || strcmp(lng_raw, lng_compare)){
-      //  Serial.println("Serial error: ignoring packet:");
-        return;
-     }
+  // if(strcmp(lat_raw, lat_compare) || strcmp(lng_raw, lng_compare)){
+  //  //  Serial.println("Serial error: ignoring packet:");
+  //    return;
+  // }
 
      toDegreeDecimalLat(lat_raw,lat_raw_type,lat);
      toDegreeDecimalLng(lng_raw,lng_raw_type,lng);
-  Serial.print(lat);
-  Serial.print(",");
-  Serial.print(lng);
-  Serial.print("\n");
+    Serial.print(lat);
+    Serial.print(",");
+    Serial.print(lng);
+    Serial.print("\n");
 
   }
 }

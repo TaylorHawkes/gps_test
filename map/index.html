@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #map {
+        height: 100%;  /* The height is 400 pixels */
+        min-height: 100%;  /* The height is 400 pixels */
+        width: 100%;  /* The width is the width of the web page */
+       }
+    html, body
+    {
+        height: 100%;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    </style>
+  </head>
+  <body>
+    <!--The div element for the map -->
+    <div id="map"></div>
+    <script>
+var map;
+function getNewPoints(){
+    var xmlhttp = new XMLHttpRequest();
+
+    xmlhttp.onreadystatechange = function() {
+        if (xmlhttp.readyState == XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
+			var points=JSON.parse(xmlhttp.responseText);
+            for(var i=0;i<points.length;i++){
+                var p={lat: parseFloat(points[i].lat), lng:parseFloat(points[i].lng)};
+                console.log(p);
+                var m = new google.maps.Marker(
+				{
+					 position:p,
+					 map: map,
+					 icon:'red_dot.png'
+				}
+
+				);
+            }
+        }
+    };
+
+    xmlhttp.open("GET", "get_points.php", true);
+    xmlhttp.send();
+}
+
+// Initialize and add the map
+function initMap() {
+
+  var uluru = {lat: 40.00845666, lng:-105.09639833};
+// var maxZoomService = new google.maps.MaxZoomService();
+
+// maxZoomService.getMaxZoomAtLatLng(uluru,
+//      function(response){
+//          alert(response.zoom);
+//      }
+//  );
+
+
+  // The location of Uluru
+  //39.993596, -105.089706
+  // The map, centered at Uluru
+  	map = new google.maps.Map(
+      document.getElementById('map'), {
+          zoom: 100, 
+          center: uluru,
+          mapTypeId: 'satellite'
+	  });
+
+
+  // The marker, positioned at Uluru
+	setInterval(function(){ getNewPoints() }, 200);
+    
+}
+    </script>
+    <!--Load the API from the specified URL
+    * The async attribute allows the browser to render the page while the API loads
+    * The key parameter will contain your own API key (which is not needed for this tutorial)
+    * The callback parameter executes the initMap() function
+    -->
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB84N-D6KDfl3RvPvqesgHkqreBYQJpHN8
+&callback=initMap">
+    </script>
+  </body>
+</html>
